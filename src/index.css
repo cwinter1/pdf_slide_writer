@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: #18181b;
+  color: #f4f4f5;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  /* iPad Safari intercepts edge swipes for pull-to-refresh / back-nav unless
+     this is set, which eats the first few pixels of every pen stroke. */
+  touch-action: manipulation;
+}
+
+/* Fabric.js sets touch-action: manipulation on its canvases (via the
+   allowTouchScrolling option) so a moving finger still pans/pinch-zooms the
+   page natively while a Bluetooth/Apple Pencil (pointerType "pen") draws. */
+
+/* Fabric.js wraps its canvas in a container div (passed via `containerClass`
+   on construction) that needs to sit directly on top of the background PDF
+   raster canvas. classList.add() rejects a space-separated class list, so
+   this has to be a single class rather than Tailwind utilities. */
+.fabric-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
