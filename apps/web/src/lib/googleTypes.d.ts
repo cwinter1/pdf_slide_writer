@@ -31,6 +31,10 @@ interface GoogleAccounts {
 
 interface GoogleNamespace {
   accounts: GoogleAccounts;
+  // Populated on `window.google.picker` once `gapi.load('picker', cb)`
+  // resolves — NOT on `window.gapi.picker`, despite the "gapi.load" call
+  // site; that's just the bootstrap loader.
+  picker: GapiPickerNamespace;
 }
 
 interface GapiPickerBuilder {
@@ -69,7 +73,6 @@ interface GapiPickerNamespace {
 
 interface GapiNamespace {
   load: (api: string, callback: () => void) => void;
-  picker: GapiPickerNamespace;
 }
 
 declare global {

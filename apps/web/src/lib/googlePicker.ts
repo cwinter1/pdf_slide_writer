@@ -30,6 +30,9 @@ function loadGapi(): Promise<void> {
 
 function loadPicker(): Promise<void> {
   if (!pickerLoadPromise) {
+    // gapi.load('picker', cb) is only the bootstrap call; it attaches the
+    // actual Picker classes (PickerBuilder, DocsView, ViewId, ...) onto
+    // window.google.picker, not window.gapi.picker.
     pickerLoadPromise = loadGapi().then(
       () =>
         new Promise<void>((resolve) => {
@@ -51,7 +54,7 @@ export function openDrivePdfPicker(options: OpenPickerOptions): Promise<DriveFil
   return loadPicker().then(
     () =>
       new Promise<DriveFile | null>((resolve, reject) => {
-        const picker = window.gapi?.picker;
+        const picker = window.google?.picker;
         if (!picker) {
           reject(new Error('Google Picker failed to load.'));
           return;
