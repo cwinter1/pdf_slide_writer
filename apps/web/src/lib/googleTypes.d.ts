@@ -41,6 +41,7 @@ interface GapiPickerBuilder {
   addView: (view: unknown) => GapiPickerBuilder;
   setOAuthToken: (token: string) => GapiPickerBuilder;
   setDeveloperKey: (key: string) => GapiPickerBuilder;
+  setOrigin: (origin: string) => GapiPickerBuilder;
   setAppId: (appId: string) => GapiPickerBuilder;
   setCallback: (cb: (data: GooglePickerResponse) => void) => GapiPickerBuilder;
   setTitle: (title: string) => GapiPickerBuilder;

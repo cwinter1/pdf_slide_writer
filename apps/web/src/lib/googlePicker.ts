@@ -68,6 +68,7 @@ export function openDrivePdfPicker(options: OpenPickerOptions): Promise<DriveFil
           .addView(view)
           .setOAuthToken(options.accessToken)
           .setDeveloperKey(options.apiKey)
+          .setOrigin(window.location.origin)
           .setTitle('Select a PDF to annotate');
 
         if (options.appId) {
