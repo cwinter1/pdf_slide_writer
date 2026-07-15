@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind's automatic content detection doesn't reach outside this app's
+   own root (and never scans node_modules, even workspace-symlinked ones),
+   so the annotation-engine package's className usage needs to be pointed
+   to explicitly or its Tailwind utility classes get silently dropped. */
+@source "../../../packages/pdf-annotation-engine/src";
+
 html,
 body,
 #root {
@@ -27,13 +33,3 @@ body {
 /* Fabric.js sets touch-action: manipulation on its canvases (via the
    allowTouchScrolling option) so a moving finger still pans/pinch-zooms the
    page natively while a Bluetooth/Apple Pencil (pointerType "pen") draws. */
-
-/* Fabric.js wraps its canvas in a container div (passed via `containerClass`
-   on construction) that needs to sit directly on top of the background PDF
-   raster canvas. classList.add() rejects a space-separated class list, so
-   this has to be a single class rather than Tailwind utilities. */
-.fabric-overlay {
-  position: absolute;
-  left: 0;
-  top: 0;
-}

@@ -1,17 +1,23 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import { PageHistoryStore } from './lib/pageHistory';
+import {
+  PageHistoryStore,
+  SlideCanvas,
+  PageNav,
+  usePdfDocument,
+  useKeyboardShortcuts,
+  useSwipeNavigation,
+  type SlideCanvasHandle,
+  type PenColorName,
+  type PenThicknessName,
+  type ToolType,
+} from '@pdf-slide-writer/annotation-engine';
 import { downloadFile, updateFileContent, createFile } from './lib/googleDrive';
 import { openDrivePdfPicker } from './lib/googlePicker';
 import { useGoogleAuth } from './hooks/useGoogleAuth';
-import { usePdfDocument } from './hooks/usePdfDocument';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { useSwipeNavigation } from './hooks/useSwipeNavigation';
-import { SlideCanvas, type SlideCanvasHandle } from './components/SlideCanvas';
-import { Toolbar } from './components/Toolbar';
-import { PageNav } from './components/PageNav';
+import { AppToolbar } from './components/AppToolbar';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import type { DriveFile, PenColorName, PenThicknessName, SaveStatus, ToolType } from './types';
+import type { DriveFile, SaveStatus } from './types';
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -106,7 +112,7 @@ function App() {
   // actually exports, so they're kept out of the initial bundle.
   const exportPdf = useCallback(async () => {
     if (!pdfState.pdf) throw new Error('No PDF loaded.');
-    const { buildAnnotatedPdf } = await import('./lib/pdfExport');
+    const { buildAnnotatedPdf } = await import('@pdf-slide-writer/annotation-engine/export');
     return buildAnnotatedPdf(pdfState.pdf, historyStoreRef.current);
   }, [pdfState.pdf]);
 
@@ -117,7 +123,7 @@ function App() {
         success: 'PDF ready.',
         error: (err) => (err instanceof Error ? err.message : 'Failed to build PDF.'),
       });
-      const { annotatedFileName } = await import('./lib/pdfExport');
+      const { annotatedFileName } = await import('@pdf-slide-writer/annotation-engine/export');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -135,7 +141,7 @@ function App() {
       setSaveStatus('saving');
       try {
         const blob = await exportPdf();
-        const { annotatedFileName } = await import('./lib/pdfExport');
+        const { annotatedFileName } = await import('@pdf-slide-writer/annotation-engine/export');
         const token = await googleAuth.ensureAccessToken();
         if (asCopy) {
           const created = await createFile(token, annotatedFileName(driveFile.name), blob);
@@ -182,7 +188,7 @@ function App() {
         />
       ) : (
         <>
-          <Toolbar
+          <AppToolbar
             tool={tool}
             color={color}
             thickness={thickness}

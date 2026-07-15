@@ -1,18 +1,9 @@
-import type { PenColorName, PenThicknessName, SaveStatus, ToolType } from '../types';
+import type { ReactNode } from 'react';
+import type { PenColorName, PenThicknessName, ToolType } from '../types';
 import { PEN_COLORS } from '../types';
-import {
-  DownloadIcon,
-  EraserIcon,
-  FolderIcon,
-  HighlighterIcon,
-  LogoutIcon,
-  PenIcon,
-  RedoIcon,
-  SaveIcon,
-  UndoIcon,
-} from './icons';
+import { EraserIcon, HighlighterIcon, PenIcon, RedoIcon, UndoIcon } from './icons';
 
-interface ToolbarProps {
+export interface ToolbarProps {
   tool: ToolType;
   color: PenColorName;
   thickness: PenThicknessName;
@@ -23,19 +14,17 @@ interface ToolbarProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  fileName: string;
-  saveStatus: SaveStatus;
-  onSave: () => void;
-  onSaveCopy: () => void;
-  onDownload: () => void;
-  onChangeFile: () => void;
-  onSignOut: () => void;
+  /** Rendered first, e.g. a file name / open-file control from the host app. */
+  leading?: ReactNode;
+  /** Rendered last and pushed to the right, e.g. the host app's save/export actions. */
+  trailing?: ReactNode;
 }
 
 const THICKNESS_ORDER: PenThicknessName[] = ['thin', 'medium', 'thick'];
 const COLOR_ORDER: PenColorName[] = ['black', 'blue', 'red'];
 
-function ToolButton({
+/** A toggleable square icon button, styled for the drawing tool switcher. Exported for reuse by host-app toolbars. */
+export function ToolButton({
   active,
   label,
   onClick,
@@ -62,7 +51,8 @@ function ToolButton({
   );
 }
 
-function IconButton({
+/** A plain square icon button (non-toggling), styled to match the toolbar. Exported for reuse by host-app toolbars. */
+export function IconButton({
   label,
   onClick,
   disabled,
@@ -87,13 +77,11 @@ function IconButton({
   );
 }
 
-const SAVE_STATUS_LABEL: Record<SaveStatus, string> = {
-  idle: 'Save to Drive',
-  saving: 'Saving…',
-  saved: 'Saved',
-  error: 'Retry save',
-};
-
+/**
+ * The drawing toolbar: tool switcher, pen color/thickness, undo/redo. Deliberately
+ * storage-agnostic — file/save/export controls are composed in via `leading`/`trailing`
+ * by the host app so this component has no knowledge of where files come from.
+ */
 export function Toolbar(props: ToolbarProps) {
   const {
     tool,
@@ -106,28 +94,13 @@ export function Toolbar(props: ToolbarProps) {
     canRedo,
     onUndo,
     onRedo,
-    fileName,
-    saveStatus,
-    onSave,
-    onSaveCopy,
-    onDownload,
-    onChangeFile,
-    onSignOut,
+    leading,
+    trailing,
   } = props;
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-2 py-2 sm:px-3">
-      <div className="flex min-w-0 items-center gap-2 pr-2">
-        <button
-          type="button"
-          onClick={onChangeFile}
-          title="Choose a different file"
-          className="flex h-11 items-center gap-2 truncate rounded-lg bg-zinc-800 px-3 text-sm text-zinc-200 hover:bg-zinc-700"
-        >
-          <FolderIcon width={18} height={18} />
-          <span className="max-w-40 truncate sm:max-w-64">{fileName}</span>
-        </button>
-      </div>
+      {leading}
 
       <div className="flex items-center gap-1">
         <ToolButton active={tool === 'pen'} label="Pen" onClick={() => onToolChange('pen')}>
@@ -171,10 +144,7 @@ export function Toolbar(props: ToolbarProps) {
                   thickness === t ? 'bg-indigo-500' : 'hover:bg-zinc-700'
                 }`}
               >
-                <span
-                  className="rounded-full bg-white"
-                  style={{ width: 8 + i * 5, height: 8 + i * 5 }}
-                />
+                <span className="rounded-full bg-white" style={{ width: 8 + i * 5, height: 8 + i * 5 }} />
               </button>
             ))}
           </div>
@@ -190,37 +160,7 @@ export function Toolbar(props: ToolbarProps) {
         </IconButton>
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onDownload}
-          title="Download a copy to this device"
-          className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-        >
-          <DownloadIcon />
-        </button>
-        <button
-          type="button"
-          onClick={onSaveCopy}
-          title="Save a copy to Drive"
-          className="hidden h-11 items-center rounded-lg bg-zinc-800 px-3 text-sm text-zinc-200 hover:bg-zinc-700 sm:flex"
-        >
-          Save a copy
-        </button>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saveStatus === 'saving'}
-          title="Save to Drive"
-          className="flex h-11 items-center gap-2 rounded-lg bg-indigo-500 px-3 text-sm font-medium text-white hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <SaveIcon width={18} height={18} />
-          {SAVE_STATUS_LABEL[saveStatus]}
-        </button>
-        <IconButton label="Sign out" onClick={onSignOut}>
-          <LogoutIcon />
-        </IconButton>
-      </div>
+      {trailing && <div className="ml-auto flex items-center gap-2">{trailing}</div>}
     </div>
   );
 }

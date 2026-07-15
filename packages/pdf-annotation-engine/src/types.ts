@@ -18,16 +18,3 @@ export const PEN_THICKNESS: Record<PenThicknessName, number> = {
 
 export const HIGHLIGHTER_COLOR = 'rgba(255, 224, 0, 0.4)';
 export const HIGHLIGHTER_WIDTH = 18;
-
-export interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-}
-
-export interface PageAnnotationState {
-  /** Serialized Fabric.js canvas JSON for this page, or null if untouched. */
-  json: object | null;
-}
-
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';

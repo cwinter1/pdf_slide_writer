@@ -7,6 +7,27 @@ up with a pen and highlighter, and save the annotated PDF back to Drive.
 No native app, no server — it's a static React app that talks to Google
 Drive directly from the browser.
 
+## Repo layout
+
+This is an npm-workspaces monorepo:
+
+```
+packages/pdf-annotation-engine/   Reusable, storage-agnostic annotation engine
+                                   (PDF.js rendering, Fabric.js drawing, undo/
+                                   redo, PDF export). No Google Drive knowledge.
+                                   See its own README for the full API.
+apps/web/                         This Google Drive + iPad app. Composes the
+                                   engine with OAuth, the Drive Picker, and
+                                   save/download UI.
+```
+
+The engine was split out on purpose: it doesn't know where a PDF comes from
+or where it goes, so it can be dropped into a different host app (a
+different storage backend, a different UI shell) without touching the
+rendering/drawing/export logic. See
+[`packages/pdf-annotation-engine/README.md`](./packages/pdf-annotation-engine/README.md)
+for its API reference and a standalone usage example.
+
 ## Stack
 
 - React + TypeScript, built with Vite
@@ -19,6 +40,8 @@ Drive directly from the browser.
 ## Setup
 
 ### 1. Install dependencies
+
+From the repo root (this installs and links both workspaces):
 
 ```bash
 npm install
@@ -51,7 +74,7 @@ from Drive and read/write it. All of this is free-tier.
 ### 3. Configure environment variables
 
 ```bash
-cp .env.example .env.local
+cp apps/web/.env.example apps/web/.env.local
 ```
 
 Fill in:
@@ -67,33 +90,27 @@ VITE_GOOGLE_API_KEY=your-api-key
 npm run dev
 ```
 
-Open the dev URL on your iPad's browser (same network as your dev
-machine), or deploy `npm run build`'s `dist/` output anywhere that serves
-static files over HTTPS (Drive's OAuth flow requires a secure origin, and
-`localhost` is exempted for local testing).
+(Root-level `dev`/`build`/`preview` scripts delegate to the `apps/web`
+workspace.) Open the dev URL on your iPad's browser (same network as your
+dev machine), or deploy the build output anywhere that serves static files
+over HTTPS (Drive's OAuth flow requires a secure origin, and `localhost` is
+exempted for local testing).
 
 ## How it works
 
+- **Rendering, drawing, undo/redo, export** are all handled by the
+  `@pdf-slide-writer/annotation-engine` package — see its
+  [README](./packages/pdf-annotation-engine/README.md) for the details
+  (rasterization scale, the Fabric-canvas-on-top-of-a-plain-canvas
+  architecture, per-page history snapshots, how export re-composites
+  everything into a new PDF).
 - **Auth**: Google Identity Services issues a short-lived OAuth access
   token scoped to `drive.file` — the app can only see files you pick
   through the Google Picker, never your whole Drive.
-- **Rendering**: each page is rasterized by pdf.js onto a plain `<canvas>`
-  at 2x scale (~144dpi) for a crisp Retina display. A separate Fabric.js
-  canvas sits on top purely for strokes, so undo/redo history stays small
-  (it never re-serializes the slide image).
-- **Drawing**: pen (3 thicknesses × 3 colors) and highlighter (translucent
-  yellow) are both Fabric.js `PencilBrush`es; the eraser tool removes a
-  whole stroke on tap rather than doing pixel erasing.
-- **History**: undo/redo is tracked per page as a stack of Fabric canvas
-  JSON snapshots, so switching slides and coming back preserves both the
-  strokes and the undo stack.
-- **Export**: on save, every page is re-rasterized fresh (so pages you
-  never opened still export correctly) and any stored annotations are
-  composited on top before being flattened into a new PDF with jsPDF.
-  "Save" overwrites the original Drive file's content; "Save a copy"
-  creates a new file named `<original> (annotated).pdf`; the download
-  button saves straight to the iPad instead, as a fallback if Drive is
-  unreachable.
+- **Save**: "Save" overwrites the original Drive file's content; "Save a
+  copy" creates a new file named `<original> (annotated).pdf`; the
+  download button saves straight to the iPad instead, as a fallback if
+  Drive is unreachable.
 
 ## Notes / known limits
 
@@ -114,6 +131,11 @@ static files over HTTPS (Drive's OAuth flow requires a secure origin, and
 - No automated test suite yet — verification so far is `tsc`, `vite
   build`, and manual/Playwright smoke testing in a desktop browser
   (mouse-simulated strokes, undo/redo, page nav, highlighter, and a full
-  export round-trip all confirmed working). The Google OAuth/Drive/Picker
-  flow itself hasn't been exercised against real Google infra — that needs
-  a real Cloud project + credentials to test.
+  export round-trip all confirmed working, both before and after the
+  workspace split). The Google OAuth/Drive/Picker flow itself hasn't been
+  exercised against real Google infra — that needs a real Cloud project +
+  credentials to test.
+- The `@pdf-slide-writer/annotation-engine` package ships source directly
+  (no build step) — fine for consumption within this monorepo, but it
+  would need a bundler build step to publish externally. See its README's
+  Notes section.

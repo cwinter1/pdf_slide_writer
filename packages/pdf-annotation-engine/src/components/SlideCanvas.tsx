@@ -8,7 +8,7 @@ import { renderPageToCanvas } from '../lib/renderPage';
 import { useElementSize } from '../hooks/useElementSize';
 import type { PenColorName, PenThicknessName, ToolType } from '../types';
 
-interface SlideCanvasProps {
+export interface SlideCanvasProps {
   pdf: PDFDocumentProxy;
   pageNumber: number;
   tool: ToolType;
