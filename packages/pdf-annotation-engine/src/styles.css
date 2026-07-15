@@ -1,0 +1,10 @@
+/* Fabric.js wraps its canvas in a container div (passed via `containerClass`
+   on construction) that needs to sit directly on top of the background PDF
+   raster canvas. classList.add() rejects a space-separated class list, so
+   this has to be a single plain CSS class rather than Tailwind utilities.
+   Import this file once from your app's entry point. */
+.fabric-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+}

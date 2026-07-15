@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Tailwind's automatic content detection doesn't reach outside this app's
+   own root (and never scans node_modules, even workspace-symlinked ones),
+   so the annotation-engine package's className usage needs to be pointed
+   to explicitly or its Tailwind utility classes get silently dropped. */
+@source "../../../packages/pdf-annotation-engine/src";
+
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: #18181b;
+  color: #f4f4f5;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  /* iPad Safari intercepts edge swipes for pull-to-refresh / back-nav unless
+     this is set, which eats the first few pixels of every pen stroke. */
+  touch-action: manipulation;
+}
+
+/* Fabric.js sets touch-action: manipulation on its canvases (via the
+   allowTouchScrolling option) so a moving finger still pans/pinch-zooms the
+   page natively while a Bluetooth/Apple Pencil (pointerType "pen") draws. */

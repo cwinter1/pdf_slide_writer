@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/pdf-annotation-engine" },
+    { "path": "./apps/web" }
+  ]
+}
