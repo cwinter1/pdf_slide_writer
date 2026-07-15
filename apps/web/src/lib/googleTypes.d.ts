@@ -1,3 +1,5 @@
+export {};
+
 interface GoogleTokenResponse {
   access_token: string;
   expires_in: number;
@@ -31,54 +33,10 @@ interface GoogleAccounts {
 
 interface GoogleNamespace {
   accounts: GoogleAccounts;
-  // Populated on `window.google.picker` once `gapi.load('picker', cb)`
-  // resolves — NOT on `window.gapi.picker`, despite the "gapi.load" call
-  // site; that's just the bootstrap loader.
-  picker: GapiPickerNamespace;
-}
-
-interface GapiPickerBuilder {
-  addView: (view: unknown) => GapiPickerBuilder;
-  setOAuthToken: (token: string) => GapiPickerBuilder;
-  setDeveloperKey: (key: string) => GapiPickerBuilder;
-  setOrigin: (origin: string) => GapiPickerBuilder;
-  setAppId: (appId: string) => GapiPickerBuilder;
-  setCallback: (cb: (data: GooglePickerResponse) => void) => GapiPickerBuilder;
-  setTitle: (title: string) => GapiPickerBuilder;
-  build: () => { setVisible: (visible: boolean) => void };
-}
-
-export interface GooglePickerDocument {
-  id: string;
-  name: string;
-  mimeType: string;
-}
-
-export interface GooglePickerResponse {
-  action: string;
-  docs?: GooglePickerDocument[];
-}
-
-interface GapiDocsView {
-  setIncludeFolders: (v: boolean) => GapiDocsView;
-  setMimeTypes: (mimeTypes: string) => GapiDocsView;
-  setSelectFolderEnabled: (v: boolean) => GapiDocsView;
-}
-
-interface GapiPickerNamespace {
-  DocsView: new (viewId?: unknown) => GapiDocsView;
-  PickerBuilder: new () => GapiPickerBuilder;
-  ViewId: { DOCS: unknown };
-  Action: { PICKED: string; CANCEL: string };
-}
-
-interface GapiNamespace {
-  load: (api: string, callback: () => void) => void;
 }
 
 declare global {
   interface Window {
     google?: GoogleNamespace;
-    gapi?: GapiNamespace;
   }
 }

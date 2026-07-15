@@ -12,14 +12,12 @@ import {
   type PenThicknessName,
   type ToolType,
 } from '@pdf-slide-writer/annotation-engine';
-import { downloadFile, updateFileContent, createFile } from './lib/googleDrive';
-import { openDrivePdfPicker } from './lib/googlePicker';
+import { downloadFile, updateFileContent, createFile, listPdfFiles } from './lib/googleDrive';
 import { useGoogleAuth } from './hooks/useGoogleAuth';
 import { AppToolbar } from './components/AppToolbar';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { DriveFilePickerModal } from './components/DriveFilePickerModal';
 import type { DriveFile, SaveStatus } from './types';
-
-const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
 function App() {
   const googleAuth = useGoogleAuth();
@@ -28,6 +26,7 @@ function App() {
   const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null);
   const [busy, setBusy] = useState(false);
   const [welcomeError, setWelcomeError] = useState<string | null>(null);
+  const [pickerFiles, setPickerFiles] = useState<DriveFile[] | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [tool, setTool] = useState<ToolType>('pen');
@@ -64,31 +63,40 @@ function App() {
   }, [googleAuth]);
 
   const handlePickFile = useCallback(async () => {
-    if (!GOOGLE_API_KEY) {
-      setWelcomeError(
-        'Missing VITE_GOOGLE_API_KEY. Set it in .env.local — see README for Google Cloud setup steps.',
-      );
-      return;
-    }
     setWelcomeError(null);
     setBusy(true);
     try {
       const token = await googleAuth.ensureAccessToken();
-      const picked = await openDrivePdfPicker({ accessToken: token, apiKey: GOOGLE_API_KEY });
-      if (!picked) return;
-
-      const bytes = await downloadFile(picked.id, token);
-      historyStoreRef.current = new PageHistoryStore();
-      setDriveFile(picked);
-      setPdfBytes(bytes);
-      setCurrentPage(1);
-      setSaveStatus('idle');
+      const files = await listPdfFiles(token);
+      setPickerFiles(files);
     } catch (err) {
-      setWelcomeError(err instanceof Error ? err.message : 'Could not open that file.');
+      setWelcomeError(err instanceof Error ? err.message : 'Could not list Drive files.');
     } finally {
       setBusy(false);
     }
   }, [googleAuth]);
+
+  const handleSelectDriveFile = useCallback(
+    async (picked: DriveFile) => {
+      setPickerFiles(null);
+      setWelcomeError(null);
+      setBusy(true);
+      try {
+        const token = await googleAuth.ensureAccessToken();
+        const bytes = await downloadFile(picked.id, token);
+        historyStoreRef.current = new PageHistoryStore();
+        setDriveFile(picked);
+        setPdfBytes(bytes);
+        setCurrentPage(1);
+        setSaveStatus('idle');
+      } catch (err) {
+        setWelcomeError(err instanceof Error ? err.message : 'Could not open that file.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [googleAuth],
+  );
 
   const handleUndo = useCallback(() => slideCanvasRef.current?.undo(), []);
   const handleRedo = useCallback(() => slideCanvasRef.current?.redo(), []);
@@ -177,6 +185,14 @@ function App() {
   return (
     <div className="flex h-full flex-col bg-zinc-950">
       <Toaster position="top-center" toastOptions={{ style: { background: '#27272a', color: '#f4f4f5' } }} />
+
+      {pickerFiles && (
+        <DriveFilePickerModal
+          files={pickerFiles}
+          onSelect={handleSelectDriveFile}
+          onCancel={() => setPickerFiles(null)}
+        />
+      )}
 
       {!isEditorReady ? (
         <WelcomeScreen

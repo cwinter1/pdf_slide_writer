@@ -1,11 +1,12 @@
 /**
  * Thin wrapper around Google Identity Services' OAuth2 token client.
- * We deliberately request the narrow `drive.file` scope: it only grants
- * access to files the user explicitly opens/creates through this app
- * (including files picked via the Google Picker), never their whole Drive.
+ * Uses the full `drive` scope: the app lists and opens PDFs directly via
+ * the Drive API (see googleDrive.ts) rather than Google's Picker widget,
+ * and the narrower `drive.file` scope only exposes files the app already
+ * has a per-file grant for — it can't list arbitrary existing files.
  */
 
-export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 

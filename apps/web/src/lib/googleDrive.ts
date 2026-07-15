@@ -11,6 +11,21 @@ async function assertOk(response: Response, action: string): Promise<Response> {
   return response;
 }
 
+export async function listPdfFiles(accessToken: string): Promise<DriveFile[]> {
+  const params = new URLSearchParams({
+    q: "mimeType='application/pdf' and trashed=false",
+    fields: 'files(id,name,mimeType)',
+    orderBy: 'modifiedTime desc',
+    pageSize: '50',
+  });
+  const response = await fetch(`${DRIVE_FILES_URL}?${params}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  await assertOk(response, 'List Drive files');
+  const data = await response.json();
+  return data.files ?? [];
+}
+
 export async function downloadFile(fileId: string, accessToken: string): Promise<ArrayBuffer> {
   const response = await fetch(`${DRIVE_FILES_URL}/${fileId}?alt=media`, {
     headers: { Authorization: `Bearer ${accessToken}` },

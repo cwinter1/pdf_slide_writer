@@ -17,7 +17,7 @@ packages/pdf-annotation-engine/   Reusable, storage-agnostic annotation engine
                                    redo, PDF export). No Google Drive knowledge.
                                    See its own README for the full API.
 apps/web/                         This Google Drive + iPad app. Composes the
-                                   engine with OAuth, the Drive Picker, and
+                                   engine with OAuth, a Drive file list, and
                                    save/download UI.
 ```
 
@@ -34,7 +34,7 @@ for its API reference and a standalone usage example.
 - [pdf.js](https://mozilla.github.io/pdf.js/) for rendering slides
 - [Fabric.js](http://fabricjs.com/) for the pen/highlighter drawing layer
 - [jsPDF](https://github.com/parallax/jsPDF) to flatten annotations back into a PDF
-- Google Identity Services (OAuth) + Google Picker + Drive REST API
+- Google Identity Services (OAuth) + Drive REST API
 - Tailwind CSS
 
 ## Setup
@@ -49,27 +49,24 @@ npm install
 
 ### 2. Google Cloud project
 
-The app needs an OAuth client and an API key so it can let you pick a file
-from Drive and read/write it. All of this is free-tier.
+The app needs an OAuth client so it can list, read, and write your Drive
+files. All of this is free-tier.
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and
    create a project (or use an existing one).
-2. **Enable APIs**: APIs & Services → Library → enable both:
-   - Google Drive API
-   - Google Picker API
+2. **Enable APIs**: APIs & Services → Library → enable **Google Drive API**.
 3. **OAuth consent screen**: APIs & Services → OAuth consent screen.
    - User type "External" is fine for personal use — add yourself as a
      test user so you don't need Google's app-verification review.
-   - Add the scope `https://www.googleapis.com/auth/drive.file` (the app
-     never asks for broader Drive access — it only ever touches files you
-     explicitly open or create through the Picker).
+   - Add the scope `https://www.googleapis.com/auth/drive` (the app lists
+     and opens PDFs directly via the Drive API, so it needs full Drive
+     read/write access rather than the narrower `drive.file` scope, which
+     can only see files it already has a per-file grant for).
 4. **OAuth client ID**: APIs & Services → Credentials → Create Credentials
    → OAuth client ID → Application type **Web application**.
    - Add your dev URL (e.g. `http://localhost:5173`) and your deployed URL
      under **Authorized JavaScript origins**. No redirect URI is needed —
      this uses the token-client (implicit) flow, not a redirect.
-5. **API key**: APIs & Services → Credentials → Create Credentials → API
-   key. Restrict it to the Picker API and Drive API for safety.
 
 ### 3. Configure environment variables
 
@@ -81,7 +78,6 @@ Fill in:
 
 ```
 VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-VITE_GOOGLE_API_KEY=your-api-key
 ```
 
 ### 4. Run it
@@ -105,8 +101,9 @@ exempted for local testing).
   architecture, per-page history snapshots, how export re-composites
   everything into a new PDF).
 - **Auth**: Google Identity Services issues a short-lived OAuth access
-  token scoped to `drive.file` — the app can only see files you pick
-  through the Google Picker, never your whole Drive.
+  token scoped to `drive` — the app lists your PDFs and opens/saves them
+  directly through the Drive REST API, with no separate Picker widget or
+  API key involved.
 - **Save**: "Save" overwrites the original Drive file's content; "Save a
   copy" creates a new file named `<original> (annotated).pdf`; the
   download button saves straight to the iPad instead, as a fallback if
@@ -132,7 +129,7 @@ exempted for local testing).
   build`, and manual/Playwright smoke testing in a desktop browser
   (mouse-simulated strokes, undo/redo, page nav, highlighter, and a full
   export round-trip all confirmed working, both before and after the
-  workspace split). The Google OAuth/Drive/Picker flow itself hasn't been
+  workspace split). The Google OAuth/Drive flow itself hasn't been
   exercised against real Google infra — that needs a real Cloud project +
   credentials to test.
 - The `@pdf-slide-writer/annotation-engine` package ships source directly
