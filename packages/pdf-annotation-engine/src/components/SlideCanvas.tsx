@@ -1,4 +1,4 @@
-import { Canvas as FabricCanvas, type TPointerEventInfo } from 'fabric';
+import { Canvas as FabricCanvas } from 'fabric';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { applyBrushSettings } from '../lib/brushes';
@@ -6,7 +6,7 @@ import { RASTER_SCALE } from '../lib/constants';
 import type { PageHistoryStore } from '../lib/pageHistory';
 import { renderPageToCanvas } from '../lib/renderPage';
 import { useElementSize } from '../hooks/useElementSize';
-import type { HighlighterColorName, PenColorName, PenThicknessName, ToolType } from '../types';
+import type { EraserThicknessName, HighlighterColorName, PenColorName, PenThicknessName, ToolType } from '../types';
 
 export interface SlideCanvasProps {
   pdf: PDFDocumentProxy;
@@ -15,6 +15,7 @@ export interface SlideCanvasProps {
   color: PenColorName;
   thickness: PenThicknessName;
   highlighterColor: HighlighterColorName;
+  eraserThickness: EraserThicknessName;
   historyStore: PageHistoryStore;
   onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
   onError: (message: string) => void;
@@ -26,7 +27,7 @@ export interface SlideCanvasHandle {
 }
 
 export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(function SlideCanvas(
-  { pdf, pageNumber, tool, color, thickness, highlighterColor, historyStore, onHistoryChange, onError },
+  { pdf, pageNumber, tool, color, thickness, highlighterColor, eraserThickness, historyStore, onHistoryChange, onError },
   ref,
 ) {
   const [containerRef, containerSize] = useElementSize<HTMLDivElement>();
@@ -113,31 +114,20 @@ export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(funct
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Apply tool/color/thickness, including eraser tap-to-delete.
+  // Apply tool/color/thickness. The eraser is itself a drawing brush (see
+  // brushes.ts) that cuts through existing strokes, so no separate
+  // tap-to-delete handling is needed here.
   useEffect(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    applyBrushSettings(canvas, { tool, color, thickness, highlighterColor });
+    applyBrushSettings(canvas, { tool, color, thickness, highlighterColor, eraserThickness });
     canvas.selection = false;
     canvas.forEachObject((obj) => {
       obj.selectable = false;
-      obj.evented = tool === 'eraser';
-      obj.hoverCursor = tool === 'eraser' ? 'pointer' : 'default';
+      obj.evented = false;
     });
-
-    if (tool !== 'eraser') return;
-
-    const handleMouseDown = (opt: TPointerEventInfo) => {
-      if (!opt.target) return;
-      canvas.remove(opt.target);
-      pushHistory();
-    };
-    canvas.on('mouse:down', handleMouseDown);
-    return () => {
-      canvas.off('mouse:down', handleMouseDown);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool, color, thickness, highlighterColor]);
+  }, [tool, color, thickness, highlighterColor, eraserThickness]);
 
   // Load the current page's raster + stored annotations whenever the page changes.
   useEffect(() => {

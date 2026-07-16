@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { HighlighterColorName, PenColorName, PenThicknessName, ToolType } from '../types';
+import type { EraserThicknessName, HighlighterColorName, PenColorName, PenThicknessName, ToolType } from '../types';
 import { HIGHLIGHTER_SWATCHES, PEN_COLORS } from '../types';
 import { EraserIcon, HighlighterIcon, PenIcon, RedoIcon, UndoIcon } from './icons';
 
@@ -8,10 +8,12 @@ export interface ToolbarProps {
   color: PenColorName;
   thickness: PenThicknessName;
   highlighterColor: HighlighterColorName;
+  eraserThickness: EraserThicknessName;
   onToolChange: (tool: ToolType) => void;
   onColorChange: (color: PenColorName) => void;
   onThicknessChange: (thickness: PenThicknessName) => void;
   onHighlighterColorChange: (color: HighlighterColorName) => void;
+  onEraserThicknessChange: (thickness: EraserThicknessName) => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -25,6 +27,7 @@ export interface ToolbarProps {
 const THICKNESS_ORDER: PenThicknessName[] = ['thin', 'medium', 'thick'];
 const COLOR_ORDER: PenColorName[] = ['black', 'blue', 'red'];
 const HIGHLIGHTER_COLOR_ORDER: HighlighterColorName[] = ['yellow', 'green', 'blue'];
+const ERASER_THICKNESS_ORDER: EraserThicknessName[] = ['thin', 'medium', 'thick'];
 
 /** A toggleable square icon button, styled for the drawing tool switcher. Exported for reuse by host-app toolbars. */
 export function ToolButton({
@@ -91,10 +94,12 @@ export function Toolbar(props: ToolbarProps) {
     color,
     thickness,
     highlighterColor,
+    eraserThickness,
     onToolChange,
     onColorChange,
     onThicknessChange,
     onHighlighterColorChange,
+    onEraserThicknessChange,
     canUndo,
     canRedo,
     onUndo,
@@ -114,7 +119,7 @@ export function Toolbar(props: ToolbarProps) {
         <ToolButton active={tool === 'highlighter'} label="Highlighter" onClick={() => onToolChange('highlighter')}>
           <HighlighterIcon />
         </ToolButton>
-        <ToolButton active={tool === 'eraser'} label="Eraser (tap a stroke to remove it)" onClick={() => onToolChange('eraser')}>
+        <ToolButton active={tool === 'eraser'} label="Eraser" onClick={() => onToolChange('eraser')}>
           <EraserIcon />
         </ToolButton>
       </div>
@@ -174,6 +179,25 @@ export function Toolbar(props: ToolbarProps) {
               }`}
               style={{ backgroundColor: HIGHLIGHTER_SWATCHES[c] }}
             />
+          ))}
+        </div>
+      )}
+
+      {tool === 'eraser' && (
+        <div className="flex items-center gap-1 rounded-lg bg-zinc-800 px-1.5 py-1.5" role="group" aria-label="Eraser grade">
+          {ERASER_THICKNESS_ORDER.map((t, i) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onEraserThicknessChange(t)}
+              aria-label={`${t} eraser`}
+              aria-pressed={eraserThickness === t}
+              className={`flex h-8 w-9 items-center justify-center rounded-md transition-colors ${
+                eraserThickness === t ? 'bg-indigo-500' : 'hover:bg-zinc-700'
+              }`}
+            >
+              <span className="rounded-full border-2 border-white" style={{ width: 10 + i * 6, height: 10 + i * 6 }} />
+            </button>
           ))}
         </div>
       )}

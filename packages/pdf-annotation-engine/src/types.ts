@@ -6,6 +6,8 @@ export type PenThicknessName = 'thin' | 'medium' | 'thick';
 
 export type HighlighterColorName = 'yellow' | 'green' | 'blue';
 
+export type EraserThicknessName = 'thin' | 'medium' | 'thick';
+
 export const PEN_COLORS: Record<PenColorName, string> = {
   black: '#111111',
   blue: '#1a56db',
@@ -33,3 +35,10 @@ export const HIGHLIGHTER_SWATCHES: Record<HighlighterColorName, string> = {
 };
 
 export const HIGHLIGHTER_WIDTH = 18;
+
+/** Eraser stroke widths, in px — bigger grades cover more area per pass. */
+export const ERASER_THICKNESS: Record<EraserThicknessName, number> = {
+  thin: 12,
+  medium: 24,
+  thick: 40,
+};

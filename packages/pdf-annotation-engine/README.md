@@ -47,6 +47,7 @@ import {
   type PenColorName,
   type PenThicknessName,
   type HighlighterColorName,
+  type EraserThicknessName,
 } from '@pdf-slide-writer/annotation-engine';
 
 function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
@@ -59,6 +60,7 @@ function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
   const [color, setColor] = useState<PenColorName>('black');
   const [thickness, setThickness] = useState<PenThicknessName>('medium');
   const [highlighterColor, setHighlighterColor] = useState<HighlighterColorName>('yellow');
+  const [eraserThickness, setEraserThickness] = useState<EraserThicknessName>('medium');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -76,10 +78,12 @@ function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
         color={color}
         thickness={thickness}
         highlighterColor={highlighterColor}
+        eraserThickness={eraserThickness}
         onToolChange={setTool}
         onColorChange={setColor}
         onThicknessChange={setThickness}
         onHighlighterColorChange={setHighlighterColor}
+        onEraserThicknessChange={setEraserThickness}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={() => canvasRef.current?.undo()}
@@ -93,6 +97,7 @@ function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
         color={color}
         thickness={thickness}
         highlighterColor={highlighterColor}
+        eraserThickness={eraserThickness}
         historyStore={historyStore}
         onHistoryChange={(undo, redo) => {
           setCanUndo(undo);
@@ -137,6 +142,7 @@ preserving the page's aspect ratio.
 | `color` | `PenColorName` | Pen color; ignored for highlighter/eraser. |
 | `thickness` | `PenThicknessName` | Pen thickness; ignored for highlighter/eraser. |
 | `highlighterColor` | `HighlighterColorName` | Highlighter color (`'yellow' \| 'green' \| 'blue'`); ignored for pen/eraser. |
+| `eraserThickness` | `EraserThicknessName` | Eraser grade (`'thin' \| 'medium' \| 'thick'`); ignored for pen/highlighter. |
 | `historyStore` | `PageHistoryStore` | Shared across the whole document — one instance per open PDF, not per page. |
 | `onHistoryChange` | `(canUndo: boolean, canRedo: boolean) => void` | Fired whenever the current page's undo/redo availability changes (including on page switch). |
 | `onError` | `(message: string) => void` | Fired if a page fails to render. |
@@ -151,7 +157,7 @@ Imperative handle (via `ref`, typed `SlideCanvasHandle`):
 #### `<Toolbar />`
 
 The drawing toolbar: tool switcher, pen color/thickness swatches, highlighter
-color swatches, undo/redo.
+color swatches, eraser grade swatches, undo/redo.
 Deliberately has no concept of files, saving, or export — compose your own
 controls in via `leading`/`trailing`, which render before/after (right-
 aligned) the drawing controls:
@@ -263,18 +269,23 @@ type ToolType = 'pen' | 'highlighter' | 'eraser';
 type PenColorName = 'black' | 'blue' | 'red';
 type PenThicknessName = 'thin' | 'medium' | 'thick';
 type HighlighterColorName = 'yellow' | 'green' | 'blue';
+type EraserThicknessName = 'thin' | 'medium' | 'thick';
 
 const PEN_COLORS: Record<PenColorName, string>;      // hex values
 const PEN_THICKNESS: Record<PenThicknessName, number>; // px stroke widths
 const HIGHLIGHTER_COLORS: Record<HighlighterColorName, string>;   // translucent rgba() values, used for drawing
 const HIGHLIGHTER_SWATCHES: Record<HighlighterColorName, string>; // solid hex values, used for the toolbar swatch buttons
 const HIGHLIGHTER_WIDTH: number;
+const ERASER_THICKNESS: Record<EraserThicknessName, number>; // px stroke widths
 ```
 
 ### `applyBrushSettings(canvas, settings)`
 
 Configures a Fabric.js canvas's active brush for a given
-`{ tool, color, thickness, highlighterColor }`. `SlideCanvas` calls this internally; exported
+`{ tool, color, thickness, highlighterColor, eraserThickness }`. The eraser
+brush composites with `destination-out`, so it drags across the page cutting
+through previously-drawn ink (grade-sized, like a real eraser) rather than
+requiring a tap on a whole stroke to delete it. `SlideCanvas` calls this internally; exported
 in case a host app drives its own Fabric canvas directly instead of using
 `SlideCanvas`.
 
