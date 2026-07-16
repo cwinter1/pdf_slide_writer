@@ -126,13 +126,50 @@ exempted for local testing).
   zooms the page. Worth a real device pass to confirm this feels right,
   since it couldn't be verified outside an actual iPad + Bluetooth pen.
 - No automated test suite yet — verification so far is `tsc`, `vite
-  build`, and manual/Playwright smoke testing in a desktop browser
+  build`, manual/Playwright smoke testing in a desktop browser
   (mouse-simulated strokes, undo/redo, page nav, highlighter, and a full
-  export round-trip all confirmed working, both before and after the
-  workspace split). The Google OAuth/Drive flow itself hasn't been
-  exercised against real Google infra — that needs a real Cloud project +
-  credentials to test.
+  export round-trip), and real on-device testing on an iPad (pick a file,
+  draw with a Bluetooth pen, save, save a copy — all confirmed working).
 - The `@pdf-slide-writer/annotation-engine` package ships source directly
   (no build step) — fine for consumption within this monorepo, but it
   would need a bundler build step to publish externally. See its README's
   Notes section.
+
+## Troubleshooting history
+
+Real device + real Google infra testing surfaced a few issues that
+automated/desktop testing couldn't catch. Recorded here so they don't get
+re-debugged from scratch:
+
+- **Google Picker "The API developer key is invalid"**: hit this
+  regardless of API key format (classic `AIza...` vs newer `AQ.Ab8...`),
+  website/HTTP-referrer restrictions (tried exact paths, wildcards, bare
+  origin, and "None"), API restrictions (confirmed scoped to exactly
+  "Google Picker API"), and explicitly setting `.setOrigin()` on the
+  `PickerBuilder`. Never found the actual root cause. Fixed by removing
+  the Picker widget entirely — the app now lists Drive PDFs directly via
+  the Drive API (`listPdfFiles` in `googleDrive.ts`) using the OAuth
+  token it already has, which needs the broader `drive` scope instead of
+  `drive.file` (see "How it works" above). No separate API key needed at
+  all anymore.
+- **GitHub Pages serving the raw README instead of the built app**: after
+  the repo's visibility changed from private to public, GitHub's CDN
+  served a Jekyll-rendered README page (title format `<page> | <repo>`)
+  at the Pages URL even though Settings → Pages → Source correctly read
+  "GitHub Actions," and query-string cache-busting (`?v=2`) didn't help.
+  Fixed by forcing a brand-new deployment (`workflow_dispatch` on
+  `deploy-pages.yml`), which purges the CDN. If this recurs, re-run that
+  workflow before assuming a config problem.
+- **Google Picker crash: `undefined is not an object (evaluating
+  '...ViewId.DOCS')`** (from when the app still used the Picker): caused
+  by reading `window.gapi.picker` instead of `window.google.picker`.
+  `gapi.load('picker', cb)` is only the bootstrap call — the real classes
+  land on `window.google.picker`. No longer relevant now that the Picker
+  is gone, but worth knowing if any future Google API integration uses
+  `gapi.load`.
+- **iPad keyboard auto-capitalization silently corrupting typed values**
+  in the Google Cloud Console: bit us twice — a test-user email
+  (`new.chriswinter@gmail.com` → `New.chriswinter@gmail.com`) and an API
+  key website-restriction entry (`https://...` → `Http://...`, losing
+  the "s" too). Always re-check what actually landed in a Cloud Console
+  text field after typing it on iPad, especially at the start of a field.
