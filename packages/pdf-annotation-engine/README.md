@@ -46,6 +46,7 @@ import {
   type ToolType,
   type PenColorName,
   type PenThicknessName,
+  type HighlighterColorName,
 } from '@pdf-slide-writer/annotation-engine';
 
 function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
@@ -57,6 +58,7 @@ function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
   const [tool, setTool] = useState<ToolType>('pen');
   const [color, setColor] = useState<PenColorName>('black');
   const [thickness, setThickness] = useState<PenThicknessName>('medium');
+  const [highlighterColor, setHighlighterColor] = useState<HighlighterColorName>('yellow');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -73,9 +75,11 @@ function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
         tool={tool}
         color={color}
         thickness={thickness}
+        highlighterColor={highlighterColor}
         onToolChange={setTool}
         onColorChange={setColor}
         onThicknessChange={setThickness}
+        onHighlighterColorChange={setHighlighterColor}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={() => canvasRef.current?.undo()}
@@ -88,6 +92,7 @@ function Editor({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
         tool={tool}
         color={color}
         thickness={thickness}
+        highlighterColor={highlighterColor}
         historyStore={historyStore}
         onHistoryChange={(undo, redo) => {
           setCanUndo(undo);
@@ -131,6 +136,7 @@ preserving the page's aspect ratio.
 | `tool` | `ToolType` | `'pen' \| 'highlighter' \| 'eraser'`. |
 | `color` | `PenColorName` | Pen color; ignored for highlighter/eraser. |
 | `thickness` | `PenThicknessName` | Pen thickness; ignored for highlighter/eraser. |
+| `highlighterColor` | `HighlighterColorName` | Highlighter color (`'yellow' \| 'green' \| 'blue'`); ignored for pen/eraser. |
 | `historyStore` | `PageHistoryStore` | Shared across the whole document — one instance per open PDF, not per page. |
 | `onHistoryChange` | `(canUndo: boolean, canRedo: boolean) => void` | Fired whenever the current page's undo/redo availability changes (including on page switch). |
 | `onError` | `(message: string) => void` | Fired if a page fails to render. |
@@ -144,7 +150,8 @@ Imperative handle (via `ref`, typed `SlideCanvasHandle`):
 
 #### `<Toolbar />`
 
-The drawing toolbar: tool switcher, pen color/thickness swatches, undo/redo.
+The drawing toolbar: tool switcher, pen color/thickness swatches, highlighter
+color swatches, undo/redo.
 Deliberately has no concept of files, saving, or export — compose your own
 controls in via `leading`/`trailing`, which render before/after (right-
 aligned) the drawing controls:
@@ -255,17 +262,19 @@ const { buildAnnotatedPdf, annotatedFileName } = await import(
 type ToolType = 'pen' | 'highlighter' | 'eraser';
 type PenColorName = 'black' | 'blue' | 'red';
 type PenThicknessName = 'thin' | 'medium' | 'thick';
+type HighlighterColorName = 'yellow' | 'green' | 'blue';
 
 const PEN_COLORS: Record<PenColorName, string>;      // hex values
 const PEN_THICKNESS: Record<PenThicknessName, number>; // px stroke widths
-const HIGHLIGHTER_COLOR: string;  // translucent yellow rgba()
+const HIGHLIGHTER_COLORS: Record<HighlighterColorName, string>;   // translucent rgba() values, used for drawing
+const HIGHLIGHTER_SWATCHES: Record<HighlighterColorName, string>; // solid hex values, used for the toolbar swatch buttons
 const HIGHLIGHTER_WIDTH: number;
 ```
 
 ### `applyBrushSettings(canvas, settings)`
 
 Configures a Fabric.js canvas's active brush for a given
-`{ tool, color, thickness }`. `SlideCanvas` calls this internally; exported
+`{ tool, color, thickness, highlighterColor }`. `SlideCanvas` calls this internally; exported
 in case a host app drives its own Fabric canvas directly instead of using
 `SlideCanvas`.
 

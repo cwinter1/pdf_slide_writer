@@ -1,9 +1,10 @@
 import { PencilBrush, type Canvas } from 'fabric';
 import {
-  HIGHLIGHTER_COLOR,
+  HIGHLIGHTER_COLORS,
   HIGHLIGHTER_WIDTH,
   PEN_COLORS,
   PEN_THICKNESS,
+  type HighlighterColorName,
   type PenColorName,
   type PenThicknessName,
   type ToolType,
@@ -13,12 +14,13 @@ export interface BrushSettings {
   tool: ToolType;
   color: PenColorName;
   thickness: PenThicknessName;
+  highlighterColor: HighlighterColorName;
 }
 
 /**
  * Configures the Fabric.js canvas' active brush for the given tool. The
- * highlighter uses a translucent yellow stroke so it reads as a highlight
- * rather than an opaque bar over slide text.
+ * highlighter uses a translucent stroke so it reads as a highlight rather
+ * than an opaque bar over slide text.
  */
 export function applyBrushSettings(canvas: Canvas, settings: BrushSettings): void {
   if (settings.tool === 'eraser') {
@@ -29,7 +31,7 @@ export function applyBrushSettings(canvas: Canvas, settings: BrushSettings): voi
   const brush = new PencilBrush(canvas);
 
   if (settings.tool === 'highlighter') {
-    brush.color = HIGHLIGHTER_COLOR;
+    brush.color = HIGHLIGHTER_COLORS[settings.highlighterColor];
     brush.width = HIGHLIGHTER_WIDTH;
     brush.strokeLineCap = 'square';
   } else {

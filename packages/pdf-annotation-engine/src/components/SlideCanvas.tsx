@@ -6,7 +6,7 @@ import { RASTER_SCALE } from '../lib/constants';
 import type { PageHistoryStore } from '../lib/pageHistory';
 import { renderPageToCanvas } from '../lib/renderPage';
 import { useElementSize } from '../hooks/useElementSize';
-import type { PenColorName, PenThicknessName, ToolType } from '../types';
+import type { HighlighterColorName, PenColorName, PenThicknessName, ToolType } from '../types';
 
 export interface SlideCanvasProps {
   pdf: PDFDocumentProxy;
@@ -14,6 +14,7 @@ export interface SlideCanvasProps {
   tool: ToolType;
   color: PenColorName;
   thickness: PenThicknessName;
+  highlighterColor: HighlighterColorName;
   historyStore: PageHistoryStore;
   onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
   onError: (message: string) => void;
@@ -25,7 +26,7 @@ export interface SlideCanvasHandle {
 }
 
 export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(function SlideCanvas(
-  { pdf, pageNumber, tool, color, thickness, historyStore, onHistoryChange, onError },
+  { pdf, pageNumber, tool, color, thickness, highlighterColor, historyStore, onHistoryChange, onError },
   ref,
 ) {
   const [containerRef, containerSize] = useElementSize<HTMLDivElement>();
@@ -116,7 +117,7 @@ export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(funct
   useEffect(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    applyBrushSettings(canvas, { tool, color, thickness });
+    applyBrushSettings(canvas, { tool, color, thickness, highlighterColor });
     canvas.selection = false;
     canvas.forEachObject((obj) => {
       obj.selectable = false;
@@ -136,7 +137,7 @@ export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(funct
       canvas.off('mouse:down', handleMouseDown);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool, color, thickness]);
+  }, [tool, color, thickness, highlighterColor]);
 
   // Load the current page's raster + stored annotations whenever the page changes.
   useEffect(() => {

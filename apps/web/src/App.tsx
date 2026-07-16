@@ -8,6 +8,7 @@ import {
   useKeyboardShortcuts,
   useSwipeNavigation,
   type SlideCanvasHandle,
+  type HighlighterColorName,
   type PenColorName,
   type PenThicknessName,
   type ToolType,
@@ -32,6 +33,7 @@ function App() {
   const [tool, setTool] = useState<ToolType>('pen');
   const [color, setColor] = useState<PenColorName>('black');
   const [thickness, setThickness] = useState<PenThicknessName>('medium');
+  const [highlighterColor, setHighlighterColor] = useState<HighlighterColorName>('yellow');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -208,9 +210,11 @@ function App() {
             tool={tool}
             color={color}
             thickness={thickness}
+            highlighterColor={highlighterColor}
             onToolChange={setTool}
             onColorChange={setColor}
             onThicknessChange={setThickness}
+            onHighlighterColorChange={setHighlighterColor}
             canUndo={canUndo}
             canRedo={canRedo}
             onUndo={handleUndo}
@@ -235,6 +239,7 @@ function App() {
                 tool={tool}
                 color={color}
                 thickness={thickness}
+                highlighterColor={highlighterColor}
                 historyStore={historyStoreRef.current}
                 onHistoryChange={handleHistoryChange}
                 onError={handleCanvasError}

@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
-import type { PenColorName, PenThicknessName, ToolType } from '../types';
-import { PEN_COLORS } from '../types';
+import type { HighlighterColorName, PenColorName, PenThicknessName, ToolType } from '../types';
+import { HIGHLIGHTER_SWATCHES, PEN_COLORS } from '../types';
 import { EraserIcon, HighlighterIcon, PenIcon, RedoIcon, UndoIcon } from './icons';
 
 export interface ToolbarProps {
   tool: ToolType;
   color: PenColorName;
   thickness: PenThicknessName;
+  highlighterColor: HighlighterColorName;
   onToolChange: (tool: ToolType) => void;
   onColorChange: (color: PenColorName) => void;
   onThicknessChange: (thickness: PenThicknessName) => void;
+  onHighlighterColorChange: (color: HighlighterColorName) => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -22,6 +24,7 @@ export interface ToolbarProps {
 
 const THICKNESS_ORDER: PenThicknessName[] = ['thin', 'medium', 'thick'];
 const COLOR_ORDER: PenColorName[] = ['black', 'blue', 'red'];
+const HIGHLIGHTER_COLOR_ORDER: HighlighterColorName[] = ['yellow', 'green', 'blue'];
 
 /** A toggleable square icon button, styled for the drawing tool switcher. Exported for reuse by host-app toolbars. */
 export function ToolButton({
@@ -87,9 +90,11 @@ export function Toolbar(props: ToolbarProps) {
     tool,
     color,
     thickness,
+    highlighterColor,
     onToolChange,
     onColorChange,
     onThicknessChange,
+    onHighlighterColorChange,
     canUndo,
     canRedo,
     onUndo,
@@ -149,6 +154,28 @@ export function Toolbar(props: ToolbarProps) {
             ))}
           </div>
         </>
+      )}
+
+      {tool === 'highlighter' && (
+        <div
+          className="flex items-center gap-1.5 rounded-lg bg-zinc-800 px-2 py-1.5"
+          role="group"
+          aria-label="Highlighter color"
+        >
+          {HIGHLIGHTER_COLOR_ORDER.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onHighlighterColorChange(c)}
+              aria-label={`${c} highlighter`}
+              aria-pressed={highlighterColor === c}
+              className={`h-8 w-8 rounded-full ring-offset-2 ring-offset-zinc-800 transition-shadow ${
+                highlighterColor === c ? 'ring-2 ring-white' : ''
+              }`}
+              style={{ backgroundColor: HIGHLIGHTER_SWATCHES[c] }}
+            />
+          ))}
+        </div>
       )}
 
       <div className="flex items-center gap-1">
