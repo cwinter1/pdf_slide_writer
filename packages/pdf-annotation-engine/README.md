@@ -145,6 +145,7 @@ preserving the page's aspect ratio.
 | `eraserThickness` | `EraserThicknessName` | Eraser grade (`'thin' \| 'medium' \| 'thick'`); ignored for pen/highlighter. |
 | `historyStore` | `PageHistoryStore` | Shared across the whole document — one instance per open PDF, not per page. |
 | `onHistoryChange` | `(canUndo: boolean, canRedo: boolean) => void` | Fired whenever the current page's undo/redo availability changes (including on page switch). |
+| `onDirty` | `() => void` (optional) | Fired after a stroke, erase, undo, or redo actually changes a page's content — not on page-load/navigation. Use this (not `onHistoryChange`) to drive autosave, since `onHistoryChange` also fires when a page is simply switched to. |
 | `onError` | `(message: string) => void` | Fired if a page fails to render. |
 
 Imperative handle (via `ref`, typed `SlideCanvasHandle`):

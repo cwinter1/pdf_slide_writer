@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { IconButton, Toolbar, type ToolbarProps } from '@pdf-slide-writer/annotation-engine';
 import type { SaveStatus } from '../types';
 import { DownloadIcon, FolderIcon, LogoutIcon, SaveIcon } from './icons';
@@ -5,6 +6,8 @@ import { DownloadIcon, FolderIcon, LogoutIcon, SaveIcon } from './icons';
 interface AppToolbarProps extends Omit<ToolbarProps, 'leading' | 'trailing'> {
   fileName: string;
   saveStatus: SaveStatus;
+  /** Timestamp (ms) of the last successful save, manual or auto — null if never saved this session. */
+  lastSavedAt: number | null;
   onSave: () => void;
   onSaveCopy: () => void;
   onDownload: () => void;
@@ -19,6 +22,28 @@ const SAVE_STATUS_LABEL: Record<SaveStatus, string> = {
   error: 'Retry save',
 };
 
+function formatRelativeTime(ms: number): string {
+  const seconds = Math.round((Date.now() - ms) / 1000);
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  return `${hours}h ago`;
+}
+
+/** "Saved 12s ago" — auto-refreshes so the relative time stays current while mounted. */
+function LastSavedIndicator({ lastSavedAt }: { lastSavedAt: number }) {
+  const [, forceTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => forceTick((n) => n + 1), 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  return <span className="hidden text-xs text-zinc-500 sm:inline">Saved {formatRelativeTime(lastSavedAt)}</span>;
+}
+
 /**
  * Wraps the engine's storage-agnostic `Toolbar` with this app's Google
  * Drive-specific file/save/download/sign-out controls, composed in via the
@@ -27,6 +52,7 @@ const SAVE_STATUS_LABEL: Record<SaveStatus, string> = {
 export function AppToolbar({
   fileName,
   saveStatus,
+  lastSavedAt,
   onSave,
   onSaveCopy,
   onDownload,
@@ -52,6 +78,7 @@ export function AppToolbar({
       }
       trailing={
         <>
+          {saveStatus !== 'saving' && lastSavedAt != null && <LastSavedIndicator lastSavedAt={lastSavedAt} />}
           <button
             type="button"
             onClick={onDownload}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   PageHistoryStore,
@@ -21,6 +21,9 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { DriveFilePickerModal } from './components/DriveFilePickerModal';
 import type { DriveFile, SaveStatus } from './types';
 
+/** How often to check for unsaved changes and, if any, silently save them to Drive. */
+const AUTOSAVE_INTERVAL_MS = 8000;
+
 function App() {
   const googleAuth = useGoogleAuth();
 
@@ -39,10 +42,14 @@ function App() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   const historyStoreRef = useRef(new PageHistoryStore());
   const slideCanvasRef = useRef<SlideCanvasHandle>(null);
   const swipeAreaRef = useRef<HTMLDivElement>(null);
+  const dirtyRef = useRef(false);
+  const saveStatusRef = useRef<SaveStatus>('idle');
+  saveStatusRef.current = saveStatus;
 
   const pdfState = usePdfDocument(pdfBytes);
 
@@ -51,6 +58,8 @@ function App() {
     setPdfBytes(null);
     setCurrentPage(1);
     setSaveStatus('idle');
+    setLastSavedAt(null);
+    dirtyRef.current = false;
     historyStoreRef.current = new PageHistoryStore();
   }, []);
 
@@ -93,6 +102,8 @@ function App() {
         setPdfBytes(bytes);
         setCurrentPage(1);
         setSaveStatus('idle');
+        setLastSavedAt(null);
+        dirtyRef.current = false;
       } catch (err) {
         setWelcomeError(err instanceof Error ? err.message : 'Could not open that file.');
       } finally {
@@ -148,7 +159,7 @@ function App() {
   }, [exportPdf, driveFile]);
 
   const handleSave = useCallback(
-    async (asCopy: boolean) => {
+    async (asCopy: boolean, opts?: { silent?: boolean }) => {
       if (!driveFile) return;
       setSaveStatus('saving');
       try {
@@ -157,20 +168,43 @@ function App() {
         const token = await googleAuth.ensureAccessToken();
         if (asCopy) {
           const created = await createFile(token, annotatedFileName(driveFile.name), blob);
-          toast.success(`Saved a copy: ${created.name}`);
+          if (!opts?.silent) toast.success(`Saved a copy: ${created.name}`);
         } else {
           await updateFileContent(driveFile.id, token, blob);
-          toast.success('Saved to Drive.');
+          if (!opts?.silent) toast.success('Saved to Drive.');
         }
+        setLastSavedAt(Date.now());
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus((s) => (s === 'saved' ? 'idle' : s)), 2500);
       } catch (err) {
+        // Autosave failures still surface a toast (silent only suppresses the
+        // success confirmation) — losing Drive sync silently would defeat the point.
+        dirtyRef.current = true;
         setSaveStatus('error');
         toast.error(err instanceof Error ? err.message : 'Failed to save to Drive.');
       }
     },
     [driveFile, exportPdf, googleAuth],
   );
+
+  const handleDirty = useCallback(() => {
+    dirtyRef.current = true;
+  }, []);
+
+  // Periodically flush unsaved changes to Drive so annotations survive a
+  // closed tab or dead battery without the user having to remember to hit
+  // Save. Reads dirty/save state through refs rather than effect deps so
+  // the interval isn't torn down and recreated on every keystroke of state.
+  useEffect(() => {
+    if (!driveFile) return;
+    const id = setInterval(() => {
+      if (dirtyRef.current && saveStatusRef.current !== 'saving') {
+        dirtyRef.current = false;
+        void handleSave(false, { silent: true });
+      }
+    }, AUTOSAVE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [driveFile, handleSave]);
 
   const handleHistoryChange = useCallback((undo: boolean, redo: boolean) => {
     setCanUndo(undo);
@@ -225,6 +259,7 @@ function App() {
             onRedo={handleRedo}
             fileName={driveFile?.name ?? 'Untitled.pdf'}
             saveStatus={saveStatus}
+            lastSavedAt={lastSavedAt}
             onSave={() => handleSave(false)}
             onSaveCopy={() => handleSave(true)}
             onDownload={handleDownload}
@@ -247,6 +282,7 @@ function App() {
                 eraserThickness={eraserThickness}
                 historyStore={historyStoreRef.current}
                 onHistoryChange={handleHistoryChange}
+                onDirty={handleDirty}
                 onError={handleCanvasError}
               />
             )}
