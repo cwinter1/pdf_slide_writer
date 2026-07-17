@@ -18,6 +18,8 @@ export interface SlideCanvasProps {
   eraserThickness: EraserThicknessName;
   historyStore: PageHistoryStore;
   onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
+  /** Fired after a stroke, erase, undo, or redo actually changes a page's content (not on page-load/navigation). */
+  onDirty?: () => void;
   onError: (message: string) => void;
 }
 
@@ -27,7 +29,19 @@ export interface SlideCanvasHandle {
 }
 
 export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(function SlideCanvas(
-  { pdf, pageNumber, tool, color, thickness, highlighterColor, eraserThickness, historyStore, onHistoryChange, onError },
+  {
+    pdf,
+    pageNumber,
+    tool,
+    color,
+    thickness,
+    highlighterColor,
+    eraserThickness,
+    historyStore,
+    onHistoryChange,
+    onDirty,
+    onError,
+  },
   ref,
 ) {
   const [containerRef, containerSize] = useElementSize<HTMLDivElement>();
@@ -45,6 +59,12 @@ export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(funct
   const pageNumberRef = useRef(pageNumber);
   pageNumberRef.current = pageNumber;
 
+  // onDirty is invoked from the mount-once Fabric event listener and the
+  // imperative undo/redo handle below, so it's read through a ref rather
+  // than closed over directly (same reasoning as pageNumberRef above).
+  const onDirtyRef = useRef(onDirty);
+  onDirtyRef.current = onDirty;
+
   const reportHistory = (page: number) => {
     onHistoryChange(historyStore.canUndo(page), historyStore.canRedo(page));
   };
@@ -55,6 +75,7 @@ export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(funct
     const page = pageNumberRef.current;
     historyStore.push(page, canvas.toJSON());
     reportHistory(page);
+    onDirtyRef.current?.();
   };
 
   const restoreSnapshot = (snapshot: object | null) => {
@@ -80,11 +101,13 @@ export const SlideCanvas = forwardRef<SlideCanvasHandle, SlideCanvasProps>(funct
         if (!historyStore.canUndo(pageNumber)) return;
         restoreSnapshot(historyStore.undo(pageNumber));
         reportHistory(pageNumber);
+        onDirtyRef.current?.();
       },
       redo: () => {
         if (!historyStore.canRedo(pageNumber)) return;
         restoreSnapshot(historyStore.redo(pageNumber));
         reportHistory(pageNumber);
+        onDirtyRef.current?.();
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
